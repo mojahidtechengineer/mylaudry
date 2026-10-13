@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b6bcb">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Laundry Manager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+<style>
+:root{
+  --bg:#eef3f7; --card:#ffffff; --ink:#14283a; --muted:#5d7083; --line:#d8e2ea;
+  --brand:#0b6bcb; --brand-ink:#ffffff; --soft:#e4f0fc;
+  --c-received:#b45309; --bg-received:#fef3c7;
+  --c-washed:#0369a1;  --bg-washed:#dbeefd;
+  --c-delivered:#15803d; --bg-delivered:#dcf5e5;
+  --danger:#b91c1c;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e1a26; --card:#162636; --ink:#e6eef5; --muted:#9bb0c3; --line:#26394c;
+    --brand:#4aa3f5; --brand-ink:#06223d; --soft:#173553;
+    --c-received:#fbbf24; --bg-received:#3a2f10;
+    --c-washed:#7cc4f5; --bg-washed:#15354f;
+    --c-delivered:#6ee79a; --bg-delivered:#12382a;
+    --danger:#f87171;
+  }
+}
+*{box-sizing:border-box}
+html{height:100%}
+body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:'Manrope',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;font-size:15px;line-height:1.5;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+button,input,select,textarea{font:inherit;color:inherit}
+header.top{background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
+.bar{max-width:1100px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.logo{font-weight:800;font-size:18px;letter-spacing:-.01em;display:flex;align-items:center;gap:8px}
+.logo i{width:26px;height:26px;border-radius:50%;border:3px solid var(--brand);display:inline-block;position:relative}
+.logo i:after{content:"";position:absolute;inset:4px;border-radius:50%;background:var(--soft)}
+nav{display:flex;gap:4px;overflow-x:auto;flex:1;scrollbar-width:none}
+nav::-webkit-scrollbar{display:none}
+nav button{background:none;border:0;padding:8px 14px;border-radius:8px;cursor:pointer;font-weight:600;color:var(--muted);white-space:nowrap}
+nav button:hover{background:var(--soft)}
+nav button.on{background:var(--brand);color:var(--brand-ink)}
+main{max-width:1100px;margin:0 auto;padding:18px 16px 60px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:16px}
+h2{margin:0 0 12px;font-size:20px;letter-spacing:-.01em}
+h3{margin:0 0 8px;font-size:16px}
+.muted{color:var(--muted)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.row>input,.row>select{flex:1;min-width:140px}
+input,select,textarea{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;width:100%}
+input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--brand);outline-offset:1px}
+label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin:10px 0 4px}
+.btn{background:var(--brand);color:var(--brand-ink);border:0;border-radius:8px;padding:10px 16px;font-weight:700;cursor:pointer;white-space:nowrap}
+.btn:hover{filter:brightness(1.08)}
+.btn.sec{background:var(--soft);color:var(--ink)}
+.btn.dng{background:transparent;color:var(--danger);border:1px solid var(--line)}
+.btn.sm{padding:6px 10px;font-size:13px}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.grid{display:grid;gap:14px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g4{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.stat b{display:block;font-size:30px;line-height:1.1}
+.stat span{color:var(--muted);font-size:13px}
+.badge{display:inline-block;padding:3px 10px;border-radius:999px;font-weight:700;font-size:12.5px}
+.s-received{background:var(--bg-received);color:var(--c-received)}
+.s-washed{background:var(--bg-washed);color:var(--c-washed)}
+.s-delivered{background:var(--bg-delivered);color:var(--c-delivered)}
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{text-align:left;font-size:13px;color:var(--muted);font-weight:600;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+.tbl td{padding:10px;border-bottom:1px solid var(--line);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:0}
+.scroll{overflow-x:auto}
+.who{border:2px solid var(--brand);background:var(--soft);border-radius:12px;padding:14px 16px;margin:12px 0}
+.who .nm{font-size:22px;font-weight:800}
+.where{display:flex;gap:10px;margin-top:8px;flex-wrap:wrap}
+.where div{background:var(--card);border-radius:8px;padding:6px 14px;border:1px solid var(--line)}
+.where b{font-size:20px;display:block;line-height:1.2}
+.where span{font-size:12px;color:var(--muted)}
+.steps{display:flex;gap:6px;margin:10px 0 4px}
+.steps div{flex:1;text-align:center;font-size:12.5px;font-weight:700;padding:8px 4px;border-radius:8px;background:var(--bg);color:var(--muted);border:1px solid var(--line)}
+.steps div.done{background:var(--brand);color:var(--brand-ink);border-color:var(--brand)}
+.big-msg{font-size:18px;font-weight:700;padding:12px 14px;border-radius:10px;margin:8px 0}
+#reader{display:none;max-width:360px;margin-top:12px;border-radius:10px;overflow:hidden}
+#modal{position:fixed;inset:0;background:rgba(10,20,30,.55);display:none;align-items:flex-start;justify-content:center;padding:20px 12px;overflow:auto;z-index:20}
+#modal .box{background:var(--card);border-radius:14px;padding:20px;width:100%;max-width:480px;border:1px solid var(--line)}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:10px;font-weight:600;z-index:30;display:none;max-width:90%}
+.idcard{width:260px;border:2px solid #14283a;border-radius:12px;padding:14px;text-align:center;background:#fff;color:#14283a;display:inline-block;margin:6px;vertical-align:top}
+.idcard .ln{font-weight:800;font-size:15px;margin-bottom:6px}
+.idcard .qr{display:flex;justify-content:center;margin:6px 0}
+.idcard .nm{font-weight:800;font-size:18px}
+.idcard .loc{font-size:14px;margin-top:4px}
+.receipt{width:72mm;font-family:'Courier New',monospace;font-size:13px;color:#000;background:#fff;margin:0 auto}
+.receipt h3{text-align:center;font-size:17px;margin:0}
+.receipt .c{text-align:center}
+.receipt hr{border:0;border-top:1px dashed #000;margin:6px 0}
+.receipt .r{display:flex;justify-content:space-between;gap:8px}
+.receipt .big{font-size:20px;font-weight:700}
+#printArea{display:none}
+.hide{display:none!important}
+@media print{
+  body{background:#fff;padding:0}
+  header.top,main,#modal,#toast{display:none!important}
+  #printArea{display:block!important}
+  @page{margin:5mm}
+}
+html,body{overflow-x:hidden;-webkit-text-size-adjust:100%}
+body{-webkit-tap-highlight-color:transparent}
+.ls{display:none}
+.stepper{display:flex;gap:8px;align-items:center}
+.stepper input{text-align:center;font-size:26px;font-weight:800;max-width:120px}
+.stepper button{width:52px;height:52px;border-radius:12px;border:1px solid var(--line);background:var(--soft);font-size:28px;font-weight:700;cursor:pointer;line-height:1}
+
+/* ---- Phones (Android) ---- */
+@media (max-width:700px){
+  body{font-size:16px}
+  .bar{padding:10px 14px;gap:0}
+  .logo{font-size:17px}
+  main{padding:14px 12px calc(96px + env(safe-area-inset-bottom,0px))}
+  .card{padding:14px;border-radius:12px}
+  h2{font-size:19px}
+
+  /* bottom tab bar, easy to reach with a thumb */
+  nav{position:fixed;left:0;right:0;bottom:0;z-index:8;background:var(--card);border-top:1px solid var(--line);
+      padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));gap:2px;overflow:visible;justify-content:space-around;box-shadow:0 -4px 16px rgba(0,0,0,.08)}
+  nav button{flex:1 1 0;min-width:0;padding:10px 2px;font-size:12.5px;border-radius:10px;text-align:center}
+  .lf{display:none}
+  .ls{display:inline}
+
+  /* inputs: 16px stops Android/Chrome zooming in, 48px is an easy tap target */
+  input,select,textarea{font-size:16px;min-height:48px}
+  .btn{min-height:48px;padding:12px 16px}
+  .btn.sm{min-height:42px;padding:8px 12px}
+  .row>input,.row>select{flex:1 1 100%}
+  .row>.btn{flex:1 1 auto}
+  .stat b{font-size:26px}
+  .who .nm{font-size:20px}
+  .where div{flex:1;text-align:center;padding:6px 8px}
+  #reader{max-width:100%}
+  #toast{bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+
+  /* popups slide up as a bottom sheet */
+  #modal{align-items:flex-end;padding:0}
+  #modal .box{max-width:none;border-radius:18px 18px 0 0;max-height:92vh;overflow:auto;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px))}
+
+  /* tables turn into easy-to-read cards */
+  .scroll{overflow:visible}
+  .tbl thead{display:none}
+  .tbl,.tbl tbody,.tbl tr,.tbl td{display:block;width:100%}
+  .tbl tr{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:10px;background:var(--bg)}
+  .tbl tr:last-child td{border-bottom:0}
+  .tbl td{border:0;padding:4px 0;display:flex;justify-content:space-between;align-items:center;gap:12px;text-align:right}
+  .tbl td:before{content:attr(data-label);color:var(--muted);font-weight:600;font-size:13px;text-align:left;flex:none}
+  .tbl td.act{display:block;text-align:left;padding-top:10px}
+  .tbl td.act:before{content:none}
+  .tbl td.act .row{flex-wrap:wrap!important}
+  .tbl td.act .btn{flex:1 1 auto}
+}
+@media (max-width:360px){ nav button{font-size:11.5px} .stat b{font-size:22px} }
+</style>
+</head>
+<body>
+<header class="top"><div class="bar">
+  <div class="logo"><i></i><span id="brandName">Laundry</span></div>
+  <nav id="nav"></nav>
+</div></header>
+<main id="main"></main>
+<div id="modal"><div class="box" id="modalBox"></div></div>
+<div id="toast"></div>
+<div id="printArea"></div>
+
+<script>
+/* ============ Data layer (browser storage; see notes for sharing across devices) ============ */
+const BUILDINGS = "ABCDEFGHIJKLMNOP".split("");
+const rng = (a,b)=>Array.from({length:b-a+1},(_,i)=>a+i);
+const ROOMS = rng(1,48), BEDS = rng(1,10);
+const KEY = "laundry_manager_v1";
+const STATUS = {received:"Received", washed:"Washed – ready", delivered:"Delivered"};
+let db;
+function load(){
+  try{ db = JSON.parse(localStorage.getItem(KEY)); }catch(e){ db = null; }
+  if(!db) db = {users:[],orders:[],seqU:0,seqB:0,
+    settings:{name:"My Laundry",price:0,currency:"",adminPin:"1234",staffPin:"1111"}};
+}
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(db)); }catch(e){ toast("Could not save – browser storage is blocked."); } }
+load();
+
+/* ============ Helpers ============ */
+const $ = s=>document.querySelector(s);
+const esc = s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pad = (n,l=4)=>String(n).padStart(l,"0");
+const fmt = t=>t? new Date(t).toLocaleString([], {dateStyle:"medium", timeStyle:"short"}) : "";
+const money = n=> (db.settings.currency? db.settings.currency+" ":"") + Number(n).toFixed(2);
+let tmr;
+function toast(m){ const t=$("#toast"); t.textContent=m; t.style.display="block"; clearTimeout(tmr); tmr=setTimeout(()=>t.style.display="none",2800); }
+function openModal(html){ $("#modalBox").innerHTML=html; $("#modal").style.display="flex"; }
+function closeModal(){ $("#modal").style.display="none"; $("#modalBox").innerHTML=""; }
+$("#modal").addEventListener("click",e=>{ if(e.target.id==="modal") closeModal(); });
+function sel(id,opts,val,withBlank){
+  return `<select id="${id}">${withBlank?`<option value="">${withBlank}</option>`:""}${opts.map(o=>`<option ${String(o)===String(val)?"selected":""}>${o}</option>`).join("")}</select>`;
+}
+function parseId(txt){ const m=String(txt).match(/[?&]u=([A-Za-z0-9-]+)/); return (m?m[1]:String(txt).trim()).toUpperCase(); }
+function qrText(u){ return location.protocol.startsWith("http") ? location.origin+location.pathname+"?u="+u.id : u.id; }
+function makeQR(el,text,size){
+  el.innerHTML="";
+  if(typeof QRCode==="undefined"){ el.textContent=text; return; }
+  new QRCode(el,{text,width:size,height:size,correctLevel:QRCode.CorrectLevel.M});
+}
+function hydrateQR(root){ root.querySelectorAll("[data-qr]").forEach(e=>makeQR(e,e.dataset.qr,+e.dataset.size||130)); }
+function csvEscape(v){ v=String(v??""); return /[",\n]/.test(v)? '"'+v.replace(/"/g,'""')+'"' : v; }
+function download(name,text,type){ const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([text],{type:type||"text/plain"})); a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000); }
+
+/* ============ Camera QR scanning ============ */
+let scanner=null;
+async function startScan(cb){
+  if(typeof Html5Qrcode==="undefined"){ toast("Scanner needs internet the first time. Type the ID instead."); return; }
+  const el=$("#reader"); el.style.display="block";
+  scanner=new Html5Qrcode("reader");
+  try{
+    await scanner.start({facingMode:"environment"},{fps:10,qrbox:220},txt=>{ stopScan(); cb(txt); });
+  }catch(e){ toast("Camera not available. Allow camera access (https required)."); stopScan(); }
+}
+async function stopScan(){
+  if(scanner){ try{ await scanner.stop(); scanner.clear(); }catch(e){} scanner=null; }
+  const el=$("#reader"); if(el) el.style.display="none";
+}
+
+/* ============ Printing ============ */
+function doPrint(html){
+  const p=$("#printArea"); p.innerHTML=html; hydrateQR(p);
+  setTimeout(()=>window.print(),300);
+}
+function receiptHtml(o){
+  const s=db.settings;
+  return `<div class="receipt">
+    <h3>${esc(s.name)}</h3><div class="c">Laundry bill</div><hr>
+    <div class="r"><span>Bill no.</span><b>${o.id}</b></div>
+    <div class="r"><span>Date</span><span>${fmt(o.created)}</span></div><hr>
+    <div><b>${esc(o.name)}</b> (${esc(o.uid)})</div>
+    <div class="r"><span>Building ${esc(o.building)}</span><span>Room ${o.room}</span><span>Bed ${o.bed}</span></div><hr>
+    <div class="r big"><span>Clothes</span><span>${o.pieces}</span></div>
+    ${o.total>0?`<div class="r"><span>Rate</span><span>${money(o.price)} / pc</span></div><div class="r big"><span>Total</span><span>${money(o.total)}</span></div>`:""}
+    ${o.note?`<div>Note: ${esc(o.note)}</div>`:""}
+    <hr><div class="c">Keep this bill. Show it when collecting.<br>Check status online with your ID.</div>
+  </div>`;
+}
+function cardHtml(u){
+  return `<div class="idcard"><div class="ln">${esc(db.settings.name)}</div>
+    <div class="qr"><div data-qr="${esc(qrText(u))}" data-size="140"></div></div>
+    <div class="nm">${esc(u.name)}</div><div>${esc(u.id)}</div>
+    <div class="loc">Building ${esc(u.building)} · Room ${u.room} · Bed ${u.bed}</div></div>`;
+}
+
+/* ============ Auth / navigation ============ */
+let role = sessionStorage.getItem("role")||"";   // "", "staff", "admin"
+let tab = "status";
+const TABS = [
+  {id:"status",   label:"Check status", short:"Status", roles:["","staff","admin"]},
+  {id:"receive",  label:"Receive clothes", short:"Receive", roles:["staff","admin"]},
+  {id:"orders",   label:"Orders", short:"Orders", roles:["staff","admin"]},
+  {id:"users",    label:"Users", short:"Users", roles:["admin"]},
+  {id:"dash",     label:"Dashboard & settings", short:"Admin", roles:["admin"]},
+  {id:"login",    label:"Staff login", short:"Login", roles:[""]},
+];
+function go(t){ stopScan(); tab=t; render(); window.scrollTo(0,0); }
+function render(){
+  $("#brandName").textContent=db.settings.name;
+  document.title=db.settings.name+" – Laundry Manager";
+  const allowed=TABS.filter(t=>t.roles.includes(role));
+  if(!allowed.find(t=>t.id===tab)) tab=allowed[0].id;
+  $("#nav").innerHTML=allowed.map(t=>`<button class="${t.id===tab?"on":""}" onclick="go('${t.id}')"><span class="lf">${t.label}</span><span class="ls">${t.short}</span></button>`).join("")
+    + (role?`<button onclick="logout()"><span class="lf">Log out (${role==="admin"?"Admin":"Receiver"})</span><span class="ls">Logout</span></button>`:"");
+  ({status:vStatus,receive:vReceive,orders:vOrders,users:vUsers,dash:vDash,login:vLogin})[tab]();
+}
+function logout(){ role=""; sessionStorage.removeItem("role"); tab="status"; render(); }
+
+function vLogin(){
+  $("#main").innerHTML=`<div class="card" style="max-width:420px;margin:30px auto">
+    <h2>Staff login</h2>
+    <label>I am the</label>
+    <select id="lrole"><option value="staff">Receiver (counter staff)</option><option value="admin">Admin</option></select>
+    <label>PIN</label>
+    <input id="lpin" type="password" inputmode="numeric" autocomplete="off" onkeydown="if(event.key==='Enter')doLogin()">
+    <p class="muted" style="font-size:13px">First time? Admin PIN is 1234, Receiver PIN is 1111. Change them in Dashboard & settings.</p>
+    <button class="btn" onclick="doLogin()">Log in</button></div>`;
+  $("#lpin").focus();
+}
+function doLogin(){
+  const r=$("#lrole").value, p=$("#lpin").value;
+  const ok = r==="admin" ? p===db.settings.adminPin : p===db.settings.staffPin;
+  if(!ok){ toast("Wrong PIN. Try again."); return; }
+  role=r; sessionStorage.setItem("role",r); tab = r==="admin"?"dash":"receive"; render();
+}
+
+/* ============ CUSTOMER: check status ============ */
+function vStatus(){
+  $("#main").innerHTML=`<div class="card"><h2>Check your laundry status</h2>
+    <div class="row"><input id="sid" placeholder="Enter your ID (example: U0001)" onkeydown="if(event.key==='Enter')checkStatus()">
+    <button class="btn" onclick="checkStatus()">Check status</button>
+    <button class="btn sec" onclick="startScan(t=>{$('#sid').value=parseId(t);checkStatus()})">Scan my QR code</button></div>
+    <div id="reader"></div></div><div id="sres"></div>`;
+  const q=new URLSearchParams(location.search).get("u");
+  if(q){ $("#sid").value=q.toUpperCase(); checkStatus(); }
+}
+function stepsHtml(st){
+  const idx={received:0,washed:1,delivered:2}[st];
+  return `<div class="steps">${["Received","Washed","Delivered"].map((l,i)=>`<div class="${i<=idx?"done":""}">${l}</div>`).join("")}</div>`;
+}
+function checkStatus(){
+  const id=parseId($("#sid").value); const u=db.users.find(x=>x.id===id);
+  const box=$("#sres");
+  if(!u){ box.innerHTML=`<div class="card">No user found with ID <b>${esc(id)}</b>. Check the ID on your QR card.</div>`; return; }
+  const list=db.orders.filter(o=>o.uid===u.id).sort((a,b)=>b.created-a.created);
+  box.innerHTML=`<div class="card"><div class="nm" style="font-size:20px;font-weight:800">${esc(u.name)}</div>
+    <div class="muted">Building ${esc(u.building)} · Room ${u.room} · Bed ${u.bed}</div></div>`
+    + (list.length? list.map(o=>{
+      const msg = o.status==="washed" ? `<div class="big-msg s-washed">Your clothes are washed. Please collect them from the laundry.</div>`
+        : o.status==="received" ? `<div class="big-msg s-received">Your clothes are being washed.</div>`
+        : `<div class="big-msg s-delivered">Delivered on ${fmt(o.deliveredAt)}. Thank you!</div>`;
+      return `<div class="card"><div class="row" style="justify-content:space-between"><b>Bill ${o.id}</b><span class="badge s-${o.status}">${STATUS[o.status]}</span></div>
+        <div class="muted">${o.pieces} clothes · given on ${fmt(o.created)}</div>${stepsHtml(o.status)}${msg}</div>`;
+    }).join("") : `<div class="card">No laundry orders yet.</div>`);
+}
+
+/* ============ STAFF: receive clothes ============ */
+let recvUser=null, lastBill=null;
+function vReceive(){
+  $("#main").innerHTML=`<div class="card"><h2>Receive clothes</h2>
+    <div class="row"><input id="rid" placeholder="Scan QR with scanner / camera, or type ID" autocomplete="off" onkeydown="if(event.key==='Enter')lookup($('#rid').value)">
+    <button class="btn" onclick="lookup($('#rid').value)">Find user</button>
+    <button class="btn sec" onclick="startScan(lookup)">Scan with camera</button></div>
+    <div id="reader"></div>
+    <p class="muted" style="margin:10px 0 0;font-size:13px">Tip: a USB barcode/QR scanner works too. Click the box and scan, it types the ID and presses Enter.</p></div>
+    <div id="rbox"></div>`;
+  if(recvUser) showRecv(); else $("#rid").focus();
+}
+function lookup(txt){
+  const id=parseId(txt); const u=db.users.find(x=>x.id===id);
+  if(!u){ toast("User "+id+" not found."); recvUser=null; $("#rbox").innerHTML=""; return; }
+  recvUser=u; lastBill=null; $("#rid").value=u.id; showRecv();
+}
+function showRecv(){
+  const u=recvUser, p=db.settings.price;
+  const open=db.orders.filter(o=>o.uid===u.id&&o.status!=="delivered").length;
+  $("#rbox").innerHTML=`<div class="card"><div class="who"><div class="nm">${esc(u.name)}</div>
+    <div class="muted">${esc(u.id)}${u.phone?" · "+esc(u.phone):""}</div>
+    <div class="where"><div><b>${esc(u.building)}</b><span>Building</span></div><div><b>${u.room}</b><span>Room</span></div><div><b>${u.bed}</b><span>Bed</span></div></div></div>
+    ${open?`<p class="muted">This user already has ${open} order(s) in progress.</p>`:""}
+    <label>Number of clothes</label>
+    <div class="stepper"><button type="button" aria-label="Less" onclick="stepPcs(-1)">−</button>
+    <input id="pcs" type="number" min="1" max="500" inputmode="numeric" placeholder="0" onkeydown="if(event.key==='Enter')createOrder()">
+    <button type="button" aria-label="More" onclick="stepPcs(1)">+</button></div>
+    <label>Note (optional)</label><input id="note" placeholder="Example: 2 white shirts, stain on trouser">
+    ${p>0?`<p class="muted">Rate: ${money(p)} per cloth</p>`:""}
+    <div class="row" style="margin-top:14px"><button class="btn" onclick="createOrder()">Create bill &amp; print</button>
+    <button class="btn sec" onclick="recvUser=null;vReceive()">Cancel</button></div></div>`;
+  $("#pcs").focus();
+}
+function stepPcs(d){ const i=$("#pcs"); i.value=Math.min(500,Math.max(0,(parseInt(i.value,10)||0)+d)); }
+function createOrder(){
+  const n=parseInt($("#pcs").value,10);
+  if(!(n>=1)){ toast("Enter the number of clothes."); return; }
+  const u=recvUser, price=Number(db.settings.price)||0;
+  db.seqB++;
+  const o={id:"B"+pad(db.seqB), uid:u.id, name:u.name, building:u.building, room:u.room, bed:u.bed,
+    pieces:n, note:$("#note").value.trim(), price, total:price*n, status:"received", created:Date.now()};
+  db.orders.push(o); save();
+  recvUser=null; lastBill=o;
+  vReceive();
+  $("#rbox").innerHTML=`<div class="card"><div class="big-msg s-delivered">Bill ${o.id} created for ${esc(o.name)} – ${o.pieces} clothes.</div>
+    <div class="row"><button class="btn" onclick="reprint('${o.id}')">Print bill again</button></div></div>`;
+  doPrint(receiptHtml(o));
+}
+function reprint(id){ const o=db.orders.find(x=>x.id===id); if(o) doPrint(receiptHtml(o)); }
+
+/* ============ STAFF/ADMIN: orders ============ */
+let of={status:"",b:"",q:""};
+function vOrders(){
+  $("#main").innerHTML=`<div class="card"><h2>Orders</h2>
+    <div class="row">
+      <select id="fs" onchange="of.status=this.value;ordersTable()"><option value="">All statuses</option>${Object.entries(STATUS).map(([k,v])=>`<option value="${k}" ${of.status===k?"selected":""}>${v}</option>`).join("")}</select>
+      <select id="fb" onchange="of.b=this.value;ordersTable()"><option value="">All buildings</option>${BUILDINGS.map(b=>`<option ${of.b===b?"selected":""}>${b}</option>`).join("")}</select>
+      <input id="fq" placeholder="Search name, ID or bill no." value="${esc(of.q)}" oninput="of.q=this.value;ordersTable()">
+    </div></div><div class="card"><div class="scroll" id="otbl"></div></div>`;
+  ordersTable();
+}
+function ordersTable(){
+  const q=of.q.trim().toLowerCase();
+  const list=db.orders.filter(o=>(!of.status||o.status===of.status)&&(!of.b||o.building===of.b)&&
+    (!q||(o.name+o.uid+o.id).toLowerCase().includes(q))).sort((a,b)=>b.created-a.created);
+  $("#otbl").innerHTML = list.length? `<table class="tbl"><thead><tr><th>Bill</th><th>Date</th><th>User</th><th>Location</th><th>Clothes</th><th>Status</th><th></th></tr></thead><tbody>`+
+    list.map(o=>`<tr><td data-label="Bill"><b>${o.id}</b></td><td data-label="Date">${fmt(o.created)}</td><td data-label="User"><span>${esc(o.name)}<div class="muted" style="font-size:12px">${esc(o.uid)}</div></span></td>
+      <td data-label="Location">Building ${esc(o.building)} · Room ${o.room} · Bed ${o.bed}</td><td data-label="Clothes"><b>${o.pieces}</b></td><td data-label="Status"><span class="badge s-${o.status}">${STATUS[o.status]}</span></td>
+      <td class="act" data-label=""><div class="row" style="flex-wrap:nowrap">${actions(o)}</div></td></tr>`).join("")+`</tbody></table>`
+    : `<p class="muted">No orders match. Receive clothes to create the first one.</p>`;
+}
+function actions(o){
+  let a="";
+  if(o.status==="received") a+=`<button class="btn sm" onclick="setStatus('${o.id}','washed')">Mark washed</button>`;
+  if(o.status==="washed") a+= role==="admin" ? `<button class="btn sm" onclick="setStatus('${o.id}','delivered')">Mark delivered</button>` : `<span class="muted" style="font-size:12px">Waiting for admin</span>`;
+  a+=`<button class="btn sec sm" onclick="reprint('${o.id}')">Print</button>`;
+  if(role==="admin") a+=`<button class="btn dng sm" onclick="delOrder('${o.id}')">Delete</button>`;
+  return a;
+}
+function setStatus(id,st){
+  const o=db.orders.find(x=>x.id===id); if(!o) return;
+  if(st==="delivered" && role!=="admin"){ toast("Only the admin can mark an order delivered."); return; }
+  o.status=st; if(st==="washed") o.washedAt=Date.now(); if(st==="delivered") o.deliveredAt=Date.now();
+  save(); ordersTable(); toast("Bill "+id+": "+STATUS[st]);
+}
+function delOrder(id){ if(!confirm("Delete bill "+id+"? This cannot be undone.")) return; db.orders=db.orders.filter(o=>o.id!==id); save(); ordersTable(); }
+
+/* ============ ADMIN: users ============ */
+let uf={q:"",b:""};
+function vUsers(){
+  $("#main").innerHTML=`<div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Users (${db.users.length})</h2>
+    <div class="row"><button class="btn" onclick="userForm()">Register user</button>
+    <button class="btn sec" onclick="importForm()">Import from CSV</button>
+    <button class="btn sec" onclick="printCards()">Print QR cards</button></div></div>
+    <div class="row" style="margin-top:12px"><input placeholder="Search name, ID or phone" value="${esc(uf.q)}" oninput="uf.q=this.value;usersTable()">
+    <select onchange="uf.b=this.value;usersTable()"><option value="">All buildings</option>${BUILDINGS.map(b=>`<option ${uf.b===b?"selected":""}>${b}</option>`).join("")}</select></div></div>
+    <div class="card"><div class="scroll" id="utbl"></div></div>`;
+  usersTable();
+}
+function filteredUsers(){
+  const q=uf.q.trim().toLowerCase();
+  return db.users.filter(u=>(!uf.b||u.building===uf.b)&&(!q||(u.name+u.id+(u.phone||"")).toLowerCase().includes(q)));
+}
+function usersTable(){
+  const list=filteredUsers();
+  $("#utbl").innerHTML=list.length?`<table class="tbl"><thead><tr><th>ID</th><th>Name</th><th>Phone</th><th>Building</th><th>Room</th><th>Bed</th><th></th></tr></thead><tbody>`+
+   list.map(u=>`<tr><td data-label="ID"><b>${u.id}</b></td><td data-label="Name">${esc(u.name)}</td><td data-label="Phone">${esc(u.phone||"–")}</td><td data-label="Building">${esc(u.building)}</td><td data-label="Room">${u.room}</td><td data-label="Bed">${u.bed}</td>
+   <td class="act" data-label=""><div class="row" style="flex-wrap:nowrap"><button class="btn sm" onclick="showCard('${u.id}')">QR card</button>
+   <button class="btn sec sm" onclick="userForm('${u.id}')">Edit</button><button class="btn dng sm" onclick="delUser('${u.id}')">Delete</button></div></td></tr>`).join("")+`</tbody></table>`
+   :`<p class="muted">No users yet. Choose “Register user” to add the first one, or import a CSV file.</p>`;
+}
+function userForm(id){
+  const u=id?db.users.find(x=>x.id===id):{name:"",phone:"",building:"A",room:1,bed:1};
+  openModal(`<h2>${id?"Edit user":"Register user"}</h2>
+   <label>Full name</label><input id="fn" value="${esc(u.name)}">
+   <label>Phone (optional)</label><input id="fp" value="${esc(u.phone||"")}">
+   <div class="grid g3"><div><label>Building</label>${sel("fbld",BUILDINGS,u.building)}</div>
+   <div><label>Room</label>${sel("froom",ROOMS,u.room)}</div><div><label>Bed</label>${sel("fbed",BEDS,u.bed)}</div></div>
+   <div class="row" style="margin-top:16px"><button class="btn" onclick="saveUser('${id||""}')">${id?"Save changes":"Register & show QR"}</button>
+   <button class="btn sec" onclick="closeModal()">Cancel</button></div>`);
+  $("#fn").focus();
+}
+function saveUser(id){
+  const name=$("#fn").value.trim(); if(!name){ toast("Enter the user's name."); return; }
+  const data={name,phone:$("#fp").value.trim(),building:$("#fbld").value,room:+$("#froom").value,bed:+$("#fbed").value};
+  if(id){ Object.assign(db.users.find(u=>u.id===id),data); save(); closeModal(); usersTable(); toast("User updated"); return; }
+  db.seqU++; const u={id:"U"+pad(db.seqU),...data,created:Date.now()}; db.users.push(u); save(); usersTable(); showCard(u.id);
+}
+function delUser(id){ if(!confirm("Delete user "+id+"? Their past orders stay in the records.")) return; db.users=db.users.filter(u=>u.id!==id); save(); usersTable(); }
+function showCard(id){
+  const u=db.users.find(x=>x.id===id);
+  openModal(`<div style="text-align:center">${cardHtml(u)}</div>
+   <div class="row" style="margin-top:14px;justify-content:center"><button class="btn" onclick="doPrint(cardHtml(db.users.find(x=>x.id==='${id}')))">Print card</button>
+   <button class="btn sec" onclick="closeModal()">Close</button></div>`);
+  hydrateQR($("#modalBox"));
+}
+function printCards(){
+  const list=filteredUsers(); if(!list.length){ toast("No users to print."); return; }
+  doPrint(`<div style="text-align:center">${list.map(cardHtml).join("")}</div>`);
+}
+function importForm(){
+  openModal(`<h2>Import users from CSV</h2>
+   <p class="muted">One user per line: <b>Name, Phone, Building, Room, Bed</b><br>Example: Ali Khan, 0501234567, C, 12, 3</p>
+   <textarea id="csv" rows="9" placeholder="Name, Phone, Building, Room, Bed"></textarea>
+   <input type="file" id="csvf" accept=".csv,.txt" style="margin-top:8px" onchange="readCsvFile(this)">
+   <div class="row" style="margin-top:14px"><button class="btn" onclick="runImport()">Import</button><button class="btn sec" onclick="closeModal()">Cancel</button></div>`);
+}
+function readCsvFile(inp){ const f=inp.files[0]; if(!f) return; const r=new FileReader(); r.onload=()=>$("#csv").value=r.result; r.readAsText(f); }
+function runImport(){
+  const lines=$("#csv").value.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+  let ok=0, bad=[];
+  lines.forEach((l,i)=>{
+    const c=l.split(",").map(x=>x.trim().replace(/^"|"$/g,""));
+    if(i===0 && /name/i.test(c[0]) && /build/i.test(c[2]||"")) return;
+    const [name,phone,b,room,bed]=c; const B=(b||"").toUpperCase(), R=+room, D=+bed;
+    if(!name||!BUILDINGS.includes(B)||!(R>=1&&R<=48)||!(D>=1&&D<=10)){ bad.push(i+1); return; }
+    db.seqU++; db.users.push({id:"U"+pad(db.seqU),name,phone,building:B,room:R,bed:D,created:Date.now()}); ok++;
+  });
+  save(); closeModal(); usersTable();
+  toast(ok+" user(s) imported"+(bad.length?". Skipped invalid line(s): "+bad.join(", "):""));
+}
+
+/* ============ ADMIN: dashboard & settings ============ */
+function vDash(){
+  const o=db.orders, today=new Date().setHours(0,0,0,0);
+  const cnt=s=>o.filter(x=>x.status===s).length;
+  const todayO=o.filter(x=>x.created>=today);
+  const byB=BUILDINGS.map(b=>({b,n:o.filter(x=>x.building===b&&x.status!=="delivered").length})).filter(x=>x.n);
+  const s=db.settings;
+  $("#main").innerHTML=`<div class="grid g4" style="margin-bottom:16px">
+    <div class="stat"><b>${cnt("received")}</b><span>Being washed</span></div>
+    <div class="stat"><b>${cnt("washed")}</b><span>Washed, waiting for delivery</span></div>
+    <div class="stat"><b>${cnt("delivered")}</b><span>Delivered</span></div>
+    <div class="stat"><b>${todayO.reduce((a,x)=>a+x.pieces,0)}</b><span>Clothes received today</span></div></div>
+   <div class="card"><h3>Pending by building</h3>${byB.length?`<div class="row">${byB.map(x=>`<span class="badge s-washed">Building ${x.b}: ${x.n}</span>`).join("")}</div>`:`<p class="muted" style="margin:0">Nothing pending right now.</p>`}</div>
+   <div class="grid g2">
+   <div class="card"><h3>Laundry settings</h3>
+    <label>Laundry name (printed on bills)</label><input id="sn" value="${esc(s.name)}">
+    <div class="grid g2"><div><label>Price per cloth (0 = no amount on bill)</label><input id="sp" type="number" min="0" step="0.01" value="${s.price}"></div>
+    <div><label>Currency label</label><input id="sc" value="${esc(s.currency)}" placeholder="e.g. AED, Rs, $"></div></div>
+    <div class="grid g2"><div><label>Admin PIN</label><input id="sa" value="${esc(s.adminPin)}"></div>
+    <div><label>Receiver PIN</label><input id="ss" value="${esc(s.staffPin)}"></div></div>
+    <div class="row" style="margin-top:14px"><button class="btn" onclick="saveSettings()">Save settings</button></div></div>
+   <div class="card"><h3>Data &amp; backup</h3>
+    <p class="muted">Data is stored in this browser. Download a backup regularly.</p>
+    <div class="row"><button class="btn" onclick="backup()">Download backup</button>
+    <button class="btn sec" onclick="$('#rf').click()">Restore backup</button>
+    <button class="btn sec" onclick="exportOrders()">Export orders (CSV)</button></div>
+    <input type="file" id="rf" class="hide" accept=".json" onchange="restore(this)">
+    <p class="muted" style="margin-top:14px;font-size:13px">The customer link for QR codes is:<br><b style="word-break:break-all">${esc(location.protocol.startsWith("http")?location.origin+location.pathname:"(host this file online to get a link)")}</b></p></div></div>`;
+}
+function saveSettings(){
+  const a=$("#sa").value.trim(), s=$("#ss").value.trim();
+  if(a.length<4||s.length<4){ toast("PINs need at least 4 characters."); return; }
+  Object.assign(db.settings,{name:$("#sn").value.trim()||"My Laundry",price:Math.max(0,Number($("#sp").value)||0),currency:$("#sc").value.trim(),adminPin:a,staffPin:s});
+  save(); render(); toast("Settings saved");
+}
+function backup(){ download("laundry-backup-"+new Date().toISOString().slice(0,10)+".json",JSON.stringify(db),"application/json"); }
+function restore(inp){
+  const f=inp.files[0]; if(!f) return;
+  const r=new FileReader(); r.onload=()=>{
+    try{ const d=JSON.parse(r.result); if(!d.users||!d.orders||!d.settings) throw 0;
+      if(!confirm("Replace all current data with this backup?")) return;
+      db=d; save(); render(); toast("Backup restored");
+    }catch(e){ toast("That file is not a valid backup."); }
+  }; r.readAsText(f);
+}
+function exportOrders(){
+  const rows=[["Bill","Date","User ID","Name","Building","Room","Bed","Clothes","Total","Status","Washed at","Delivered at"]];
+  db.orders.forEach(o=>rows.push([o.id,fmt(o.created),o.uid,o.name,o.building,o.room,o.bed,o.pieces,o.total,STATUS[o.status],fmt(o.washedAt),fmt(o.deliveredAt)]));
+  download("orders.csv",rows.map(r=>r.map(csvEscape).join(",")).join("\n"),"text/csv");
+}
+
+render();
+</script>
+</body>
+</html>
